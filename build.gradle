@@ -119,6 +119,30 @@ tasks.register('generateMineralGearResources') {
             ag.setColor(new Color(255, 255, 255, 35))
             ag.fillRect(5, 5, 6, 4)
             ag.fillRect(37, 17, 8, 5)
+
+            // Face details inspired by the supplied gold avatar reference:
+            // a red left eye and violet right eye on the helmet's front UV area.
+            ag.setColor(new Color(28, 18, 8, 255))
+            ag.fillRect(24, 9, 2, 6)
+            ag.fillRect(29, 9, 2, 6)
+            ag.setColor(new Color(225, 35, 30, 255))
+            ag.fillRect(24, 10, 2, 4)
+            ag.setColor(new Color(112, 78, 225, 255))
+            ag.fillRect(29, 10, 2, 4)
+            ag.setColor(new Color(255, 235, 150, 255))
+            ag.fillRect(24, 10, 1, 1)
+            ag.fillRect(29, 10, 1, 1)
+
+            // Small turquoise fish/diamond badge on the chest front.
+            ag.setColor(new Color(0, 70, 82, 255))
+            ag.fillRect(21, 23, 6, 6)
+            ag.setColor(new Color(0, 151, 166, 255))
+            ag.fillRect(22, 23, 4, 5)
+            ag.fillRect(20, 24, 2, 3)
+            ag.fillRect(26, 24, 2, 3)
+            ag.setColor(new Color(110, 242, 236, 255))
+            ag.fillRect(23, 22, 2, 1)
+            ag.fillRect(23, 27, 2, 1)
             ag.dispose()
 
             ['humanoid', 'humanoid_leggings'].each { layer ->
