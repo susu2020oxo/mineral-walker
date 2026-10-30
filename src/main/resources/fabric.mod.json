@@ -2,11 +2,12 @@
   "schemaVersion": 1,
   "id": "mineralwalker",
   "version": "${version}",
-  "name": "矿物行走者",
-  "description": "修复护腿栏原版矿物块的识别，穿戴后恢复自动发放对应专属附魔武器；保留胸甲与护腿双槽穿戴。",
+  "name": "矿物行走者：矿物化身",
+  "description": "原版矿物块可穿戴在头盔、胸甲、护腿和靴子栏；四件同材质时变成矿物化身，获得10×10矿物领域、触碰生物转化、矿物色生命值和强化武器。",
   "environment": "*",
   "entrypoints": {
-    "main": ["dev.mineralwalker.MineralWalker"]
+    "main": ["dev.mineralwalker.MineralWalker"],
+    "client": ["dev.mineralwalker.MineralWalkerClient"]
   },
   "depends": {
     "fabricloader": ">=0.19.3",
