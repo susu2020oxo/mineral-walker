@@ -109,6 +109,7 @@ public final class MineralGear {
     }
 
     public static void handlePlayer(ServerPlayer player) {
+        MineralBlocks.updateInventoryEquipmentSlots(player);
         UUID playerId = player.getUUID();
         Item currentBlockItem = player.getItemBySlot(EquipmentSlot.LEGS).getItem();
         Block currentBlock = MineralBlocks.blockFor(currentBlockItem);
