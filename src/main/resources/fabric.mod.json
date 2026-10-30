@@ -3,7 +3,7 @@
   "id": "mineralwalker",
   "version": "${version}",
   "name": "矿物行走者",
-  "description": "原版矿物块直接穿戴在护腿栏，自动获得对应材质的专属附魔武器；攻击生物掉落对应矿物材料。",
+  "description": "原版矿物块可分别穿戴在胸甲和护腿栏；胸甲触发行走效果，护腿自动获得对应材质的专属附魔武器。",
   "environment": "*",
   "entrypoints": {
     "main": ["dev.mineralwalker.MineralWalker"]
