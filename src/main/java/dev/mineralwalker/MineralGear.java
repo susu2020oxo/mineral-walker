@@ -72,7 +72,14 @@ public final class MineralGear {
 
     public static void initialize() {
         for (MineralSpec spec : SPECS) {
-            Item vanillaBlockItem = BuiltInRegistries.ITEM.getValue(id(spec.id()));
+            // These are vanilla block items, not mineralwalker:* custom items.
+            // Looking them up in the mod namespace caused the leggings item to
+            // equip correctly but prevented the weapon mapping from ever matching.
+            Identifier vanillaItemId = Identifier.fromNamespaceAndPath("minecraft", spec.id());
+            Item vanillaBlockItem = BuiltInRegistries.ITEM.getValue(vanillaItemId);
+            if (vanillaBlockItem == null || vanillaBlockItem == net.minecraft.world.item.Items.AIR) {
+                throw new IllegalStateException("Missing vanilla mineral block item: " + vanillaItemId);
+            }
             MINERAL_BLOCKS.put(vanillaBlockItem, spec);
             registerMineralSword(spec);
         }
