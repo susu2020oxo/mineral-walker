@@ -180,6 +180,51 @@ public final class MineralGear {
         return stack;
     }
 
+    /**
+     * Full four-piece transformation upgrades the matching sword to an empowered version.
+     * If the player previously had a full inventory and the first sword was dropped,
+     * create a boosted replacement rather than leaving the transformation without a weapon.
+     */
+    public static void boostWeaponForBlock(ServerPlayer player, Block mineralBlock) {
+        MineralSpec spec = MINERAL_BLOCKS.get(mineralBlock.asItem());
+        if (spec == null) return;
+
+        Item sword = SWORDS_BY_SPEC.get(spec);
+        if (sword == null) return;
+
+        boolean upgraded = false;
+        for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++) {
+            ItemStack stack = player.getInventory().getItem(slot);
+            if (stack.is(sword)) {
+                applyTransformationEnchantments(player, stack, spec);
+                upgraded = true;
+            }
+        }
+        ItemStack offhand = player.getOffhandItem();
+        if (offhand.is(sword)) {
+            applyTransformationEnchantments(player, offhand, spec);
+            upgraded = true;
+        }
+
+        if (!upgraded) {
+            ItemStack stack = createEnchantedWeapon((ServerLevel) player.level(), spec, sword);
+            applyTransformationEnchantments(player, stack, spec);
+            if (!player.getInventory().add(stack)) {
+                player.drop(stack, false);
+            }
+        }
+    }
+
+    private static void applyTransformationEnchantments(ServerPlayer player, ItemStack stack, MineralSpec spec) {
+        var enchantments = player.level().registryAccess().lookupOrThrow(Registries.ENCHANTMENT);
+        stack.enchant(enchantments.getOrThrow(Enchantments.SHARPNESS), Math.min(15, spec.sharpness() + 7));
+        stack.enchant(enchantments.getOrThrow(Enchantments.LOOTING), Math.min(10, spec.looting() + 4));
+        stack.enchant(enchantments.getOrThrow(Enchantments.UNBREAKING), Math.min(10, spec.unbreaking() + 5));
+        stack.enchant(enchantments.getOrThrow(Enchantments.FIRE_ASPECT), Math.max(3, spec.fireAspect() + 2));
+        stack.enchant(enchantments.getOrThrow(Enchantments.MENDING), 1);
+        stack.enchant(enchantments.getOrThrow(Enchantments.KNOCKBACK), 3);
+    }
+
     public static MineralSpec specForWeapon(Item weapon) {
         return WEAPONS.get(weapon);
     }
