@@ -3,12 +3,10 @@
   "id": "mineralwalker",
   "version": "${version}",
   "name": "矿物行走者",
-  "description": "穿上矿物方块胸甲，行走时把脚下的自然地面变成对应的矿物方块。",
+  "description": "直接穿戴原版矿物方块，行走时将脚下实心地面变成对应矿物块。",
   "environment": "*",
   "entrypoints": {
-    "main": [
-      "dev.mineralwalker.MineralWalker"
-    ]
+    "main": ["dev.mineralwalker.MineralWalker"]
   },
   "depends": {
     "fabricloader": ">=0.19.3",
