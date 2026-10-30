@@ -11,8 +11,8 @@ public final class MineralWalker implements ModInitializer {
 
     @Override
     public void onInitialize() {
-        MineralArmorItems.initialize();
+        MineralBlocks.initialize();
         ServerTickEvents.END_LEVEL_TICK.register(MineralTrail::onLevelTick);
-        LOGGER.info("Mineral Walker loaded: {} mineral chest armors registered.", MineralArmorItems.itemCount());
+        LOGGER.info("Mineral Walker initialized. Vanilla mineral block items are now wearable.");
     }
 }
