@@ -80,13 +80,13 @@ tasks.register('generateMineralEquipment') {
             String id = mineral.id
             writeJson("assets/mineralwalker/equipment/${id}.json", [
                 layers: [
-                    humanoid: [[texture: "mineralwalker:equipment/humanoid/${id}"]],
-                    humanoid_leggings: [[texture: "mineralwalker:equipment/humanoid_leggings/${id}"]]
+                    humanoid: [[texture: "mineralwalker:${id}"]],
+                    humanoid_leggings: [[texture: "mineralwalker:${id}"]]
                 ]
             ])
 
             ['humanoid', 'humanoid_leggings'].each { layer ->
-                File textureFile = new File(root, "assets/mineralwalker/textures/equipment/${layer}/${id}.png")
+                File textureFile = new File(root, "assets/mineralwalker/textures/entity/equipment/${layer}/${id}.png")
                 textureFile.parentFile.mkdirs()
                 BufferedImage image = new BufferedImage(64, 32, BufferedImage.TYPE_INT_ARGB)
                 Graphics2D graphics = image.createGraphics()
