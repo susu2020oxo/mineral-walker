@@ -30,11 +30,11 @@ public final class MineralTrail {
         for (ServerPlayer player : level.players()) {
             MineralGear.handlePlayer(player);
             UUID playerId = player.getUUID();
-            ItemStack leggingsStack = player.getItemBySlot(EquipmentSlot.LEGS);
-            Block mineral = MineralBlocks.blockFor(leggingsStack.getItem());
+            ItemStack chestStack = player.getItemBySlot(EquipmentSlot.CHEST);
+            Block mineral = MineralBlocks.blockFor(chestStack.getItem());
             if (mineral == null) {
-                ItemStack chestStack = player.getItemBySlot(EquipmentSlot.CHEST);
-                mineral = MineralBlocks.blockFor(chestStack.getItem());
+                ItemStack leggingsStack = player.getItemBySlot(EquipmentSlot.LEGS);
+                mineral = MineralBlocks.blockFor(leggingsStack.getItem());
             }
 
             Block previousMineral = ACTIVE_MINERAL.get(playerId);
