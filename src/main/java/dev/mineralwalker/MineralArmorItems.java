@@ -36,7 +36,7 @@ public final class MineralArmorItems {
         register("emerald_block", Blocks.EMERALD_BLOCK);
         register("lapis_block", Blocks.LAPIS_BLOCK);
         register("redstone_block", Blocks.REDSTONE_BLOCK);
-        register("copper_block", Blocks.COPPER_BLOCK);
+        register("copper_block", Blocks.COPPER_BLOCK.weathering().unaffected());
         register("netherite_block", Blocks.NETHERITE_BLOCK);
         register("amethyst_block", Blocks.AMETHYST_BLOCK);
         register("quartz_block", Blocks.QUARTZ_BLOCK);
