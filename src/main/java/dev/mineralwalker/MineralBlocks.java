@@ -5,7 +5,6 @@ import java.util.Map;
 
 import net.fabricmc.fabric.api.item.v1.DefaultItemComponentEvents;
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -17,8 +16,8 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 
 /**
- * Adds the vanilla equippable component directly to vanilla mineral block items.
- * No replacement/custom chestplate items are registered by this mod.
+ * Makes the vanilla mineral block items wearable in the leggings slot.
+ * The item itself remains the original Minecraft block item; no leggings item is registered.
  */
 public final class MineralBlocks {
     private static final Map<Item, Block> MINERAL_ITEMS = new IdentityHashMap<>();
@@ -58,7 +57,7 @@ public final class MineralBlocks {
         DefaultItemComponentEvents.MODIFY.register(context -> {
             MINERAL_ITEMS.forEach((item, block) -> {
                 String path = BuiltinBlockNames.assetName(block);
-                Equippable equippable = Equippable.builder(EquipmentSlot.CHEST)
+                Equippable equippable = Equippable.builder(EquipmentSlot.LEGS)
                         .setAsset(equipmentAsset(path))
                         .setSwappable(true)
                         .setDamageOnHurt(false)
@@ -68,7 +67,7 @@ public final class MineralBlocks {
             });
         });
 
-        MineralWalker.LOGGER.info("Mineral Walker attached chest-slot equipment to {} vanilla block items.",
+        MineralWalker.LOGGER.info("Attached leggings-slot equipment to {} original vanilla mineral block items.",
                 MINERAL_ITEMS.size());
     }
 
