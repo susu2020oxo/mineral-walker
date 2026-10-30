@@ -17,7 +17,7 @@ import net.minecraft.world.level.block.state.BlockState;
 
 /**
  * Replaces the solid block directly under a moving player with the block represented
- * by the vanilla mineral block item worn in the chest slot.
+ * by the vanilla mineral block item worn in the leggings slot (or chest slot for legacy saves).
  */
 public final class MineralTrail {
     private static final Map<UUID, BlockPos> LAST_FOOT_BLOCK = new HashMap<>();
@@ -30,8 +30,12 @@ public final class MineralTrail {
         for (ServerPlayer player : level.players()) {
             MineralGear.handlePlayer(player);
             UUID playerId = player.getUUID();
-            ItemStack chestStack = player.getItemBySlot(EquipmentSlot.CHEST);
-            Block mineral = MineralBlocks.blockFor(chestStack.getItem());
+            ItemStack leggingsStack = player.getItemBySlot(EquipmentSlot.LEGS);
+            Block mineral = MineralBlocks.blockFor(leggingsStack.getItem());
+            if (mineral == null) {
+                ItemStack chestStack = player.getItemBySlot(EquipmentSlot.CHEST);
+                mineral = MineralBlocks.blockFor(chestStack.getItem());
+            }
 
             Block previousMineral = ACTIVE_MINERAL.get(playerId);
             if (!Objects.equals(previousMineral, mineral)) {
