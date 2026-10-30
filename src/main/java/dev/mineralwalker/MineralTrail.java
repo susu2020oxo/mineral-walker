@@ -82,6 +82,5 @@ public final class MineralTrail {
     private static void sendNotice(ServerPlayer player, String message) {
         Component notice = Component.literal("[矿物行走者] " + message);
         player.sendSystemMessage(notice);
-        player.displayClientMessage(notice, true);
     }
 }
