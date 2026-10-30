@@ -96,9 +96,31 @@ public final class MineralBlocks {
     }
 
     public static void updateInventoryEquipmentSlots(Player player) {
-        EquipmentSlot desiredSlot = nextEmptyMineralArmorSlot(player);
+        // Repair the component on items that are ALREADY equipped first.
+        // Inventory#getContainerSize also includes armor and offhand compartments in
+        // this version. Reassigning those stacks to the next empty slot made a worn
+        // leggings block claim to be a chest item, so Minecraft stopped rendering its
+        // humanoid_leggings equipment layer. Keep every worn stack bound to its real slot.
+        EquipmentSlot[] armorSlots = {
+                EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET
+        };
+        for (EquipmentSlot slot : armorSlots) {
+            ItemStack equipped = player.getItemBySlot(slot);
+            if (equipped.isEmpty() || blockFor(equipped.getItem()) == null) {
+                continue;
+            }
 
-        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            Equippable correct = equippableFor(equipped.getItem(), slot);
+            if (correct != null && !Objects.equals(equipped.get(DataComponents.EQUIPPABLE), correct)) {
+                equipped.set(DataComponents.EQUIPPABLE, correct);
+            }
+        }
+
+        // Only retarget ordinary main-inventory stacks. Armor slots (and offhand)
+        // must never be overwritten by the next-free-slot calculation.
+        EquipmentSlot desiredSlot = nextEmptyMineralArmorSlot(player);
+        int mainInventorySize = Math.min(36, player.getInventory().getContainerSize());
+        for (int i = 0; i < mainInventorySize; i++) {
             ItemStack stack = player.getInventory().getItem(i);
             if (stack.isEmpty() || blockFor(stack.getItem()) == null) {
                 continue;
@@ -106,7 +128,7 @@ public final class MineralBlocks {
 
             Equippable desired = equippableFor(stack.getItem(), desiredSlot);
             Equippable current = stack.get(DataComponents.EQUIPPABLE);
-            if (!Objects.equals(current, desired)) {
+            if (desired != null && !Objects.equals(current, desired)) {
                 stack.set(DataComponents.EQUIPPABLE, desired);
             }
         }
