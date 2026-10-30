@@ -3,7 +3,7 @@
   "id": "mineralwalker",
   "version": "${version}",
   "name": "矿物行走者",
-  "description": "原版矿物块可分别穿戴在胸甲和护腿栏；胸甲触发行走效果，护腿自动获得对应材质的专属附魔武器。",
+  "description": "修复护腿栏原版矿物块的识别，穿戴后恢复自动发放对应专属附魔武器；保留胸甲与护腿双槽穿戴。",
   "environment": "*",
   "entrypoints": {
     "main": ["dev.mineralwalker.MineralWalker"]
