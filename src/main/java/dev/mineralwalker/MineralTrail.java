@@ -11,17 +11,17 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 
 /**
- * Replaces the solid block directly under a moving player with the block represented
- * by the vanilla mineral block item worn in the leggings slot (or chest slot for legacy saves).
+ * Base mineral walking uses one block underfoot. A complete four-piece matching
+ * set expands the effect to a 10x10 area around the player's feet.
  */
 public final class MineralTrail {
     private static final Map<UUID, BlockPos> LAST_FOOT_BLOCK = new HashMap<>();
     private static final Map<UUID, Block> ACTIVE_MINERAL = new HashMap<>();
+    private static final Map<UUID, Boolean> LAST_FULL_SET = new HashMap<>();
 
     private MineralTrail() {
     }
@@ -29,13 +29,20 @@ public final class MineralTrail {
     public static void onLevelTick(ServerLevel level) {
         for (ServerPlayer player : level.players()) {
             MineralGear.handlePlayer(player);
+            MineralTransformation.handlePlayer(player, level);
+
             UUID playerId = player.getUUID();
-            ItemStack chestStack = player.getItemBySlot(EquipmentSlot.CHEST);
-            Block mineral = MineralBlocks.blockFor(chestStack.getItem());
-            if (mineral == null) {
-                ItemStack leggingsStack = player.getItemBySlot(EquipmentSlot.LEGS);
-                mineral = MineralBlocks.blockFor(leggingsStack.getItem());
+            Block fullSetMineral = MineralBlocks.uniformMineral(player);
+            boolean fullSet = fullSetMineral != null;
+            Boolean wasFullSet = LAST_FULL_SET.put(playerId, fullSet);
+            if (wasFullSet == null || wasFullSet != fullSet) {
+                // Re-run the footprint immediately when the avatar mode changes.
+                LAST_FOOT_BLOCK.remove(playerId);
             }
+
+            Block mineral = fullSetMineral != null
+                    ? fullSetMineral
+                    : MineralBlocks.firstEquippedMineral(player);
 
             Block previousMineral = ACTIVE_MINERAL.get(playerId);
             if (!Objects.equals(previousMineral, mineral)) {
@@ -43,10 +50,10 @@ public final class MineralTrail {
                     sendNotice(player, MineralBlocks.displayName(previousMineral) + "行走效果已关闭");
                 }
                 if (mineral != null) {
-                    sendNotice(player, "已激活：" + MineralBlocks.displayName(mineral) + "行走效果");
+                    sendNotice(player, "已激活：" + MineralBlocks.displayName(mineral)
+                            + (fullSet ? "10×10矿物领域" : "矿物行走效果"));
                     ACTIVE_MINERAL.put(playerId, mineral);
-                    // Do not replace the block the player is currently standing on just by equipping.
-                    LAST_FOOT_BLOCK.put(playerId, footBlock(player));
+                    LAST_FOOT_BLOCK.remove(playerId);
                 } else {
                     ACTIVE_MINERAL.remove(playerId);
                     LAST_FOOT_BLOCK.remove(playerId);
@@ -63,21 +70,33 @@ public final class MineralTrail {
                 continue;
             }
 
-            BlockState ground = level.getBlockState(underFoot);
-            if (ground.isAir()
-                    || !ground.getFluidState().isEmpty()
-                    || ground.hasBlockEntity()
-                    || level.getBlockEntity(underFoot) != null
-                    || ground.getDestroySpeed(level, underFoot) < 0.0F
-                    || !ground.isFaceSturdy(level, underFoot, Direction.UP)
-                    || ground.is(mineral)) {
-                continue;
+            if (fullSet) {
+                // A 10x10 square, centered on the player's current foot block.
+                for (int dx = -5; dx < 5; dx++) {
+                    for (int dz = -5; dz < 5; dz++) {
+                        replaceGroundBlock(level, underFoot.offset(dx, 0, dz), mineral);
+                    }
+                }
+            } else {
+                replaceGroundBlock(level, underFoot, mineral);
             }
-
-            // Replace solid ground blocks (including player-built floors), but never containers,
-            // fluids, air, block entities, or unbreakable blocks.
-            level.setBlock(underFoot, mineral.defaultBlockState(), 3);
         }
+    }
+
+    private static void replaceGroundBlock(ServerLevel level, BlockPos pos, Block mineral) {
+        BlockState ground = level.getBlockState(pos);
+        if (ground.isAir()
+                || !ground.getFluidState().isEmpty()
+                || ground.hasBlockEntity()
+                || level.getBlockEntity(pos) != null
+                || ground.getDestroySpeed(level, pos) < 0.0F
+                || !ground.isFaceSturdy(level, pos, Direction.UP)
+                || ground.is(mineral)) {
+            return;
+        }
+
+        // Never overwrite containers, fluids, air or unbreakable blocks.
+        level.setBlock(pos, mineral.defaultBlockState(), 3);
     }
 
     private static BlockPos footBlock(ServerPlayer player) {
@@ -85,7 +104,6 @@ public final class MineralTrail {
     }
 
     private static void sendNotice(ServerPlayer player, String message) {
-        Component notice = Component.literal("[矿物行走者] " + message);
-        player.sendSystemMessage(notice);
+        player.sendSystemMessage(Component.literal("[矿物行走者] " + message));
     }
 }
