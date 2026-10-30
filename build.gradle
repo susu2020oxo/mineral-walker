@@ -1,0 +1,131 @@
+import java.awt.Color
+import java.awt.Graphics2D
+import java.awt.image.BufferedImage
+import javax.imageio.ImageIO
+import groovy.json.JsonOutput
+
+plugins {
+    id 'net.fabricmc.fabric-loom' version "${loom_version}"
+}
+
+group = project.maven_group
+version = project.mod_version
+base {
+    archivesName = project.archives_base_name
+}
+
+repositories {
+    maven { url = 'https://maven.fabricmc.net/' }
+    mavenCentral()
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+    withSourcesJar()
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 25
+    options.encoding = 'UTF-8'
+}
+
+processResources {
+    inputs.property 'version', project.version
+    filesMatching('fabric.mod.json') {
+        expand 'version': project.version
+    }
+}
+
+// Generate small, color-coded armor textures and the 26.2 item/equipment definitions.
+def minerals = [
+    [id: 'coal_block', name: '煤炭块胸甲', color: 0x454545],
+    [id: 'iron_block', name: '铁块胸甲', color: 0xB8B8B8],
+    [id: 'gold_block', name: '金块胸甲', color: 0xF4C52E],
+    [id: 'diamond_block', name: '钻石块胸甲', color: 0x55E6D0],
+    [id: 'emerald_block', name: '绿宝石块胸甲', color: 0x16B85B],
+    [id: 'lapis_block', name: '青金石块胸甲', color: 0x254C9B],
+    [id: 'redstone_block', name: '红石块胸甲', color: 0xA52B25],
+    [id: 'copper_block', name: '铜块胸甲', color: 0xC87548],
+    [id: 'netherite_block', name: '下界合金块胸甲', color: 0x51413F],
+    [id: 'amethyst_block', name: '紫水晶块胸甲', color: 0xA56BCE],
+    [id: 'quartz_block', name: '石英块胸甲', color: 0xE8E3D8],
+    [id: 'raw_iron_block', name: '粗铁块胸甲', color: 0x9A795C],
+    [id: 'raw_gold_block', name: '粗金块胸甲', color: 0xC49B28],
+    [id: 'raw_copper_block', name: '粗铜块胸甲', color: 0xA65F42]
+]
+
+def generatedResources = layout.buildDirectory.dir('generated/mineralwalker-resources')
+sourceSets.main.resources.srcDir(generatedResources)
+
+tasks.register('generateMineralResources') {
+    outputs.dir(generatedResources)
+    doLast {
+        File root = generatedResources.get().asFile
+        root.mkdirs()
+
+        def writeJson = { String relativePath, Object value ->
+            File output = new File(root, relativePath)
+            output.parentFile.mkdirs()
+            output.setText(JsonOutput.prettyPrint(JsonOutput.toJson(value)), 'UTF-8')
+        }
+
+        Map<String, String> zh = [:]
+        Map<String, String> en = [:]
+        minerals.each { mineral ->
+            String id = mineral.id
+            String itemId = "${id}_chestplate"
+            zh["item.mineralwalker.${itemId}"] = mineral.name
+            en["item.mineralwalker.${itemId}"] = itemId.replace('_', ' ').capitalize()
+
+            // Reuse the corresponding vanilla block item model for a recognizable inventory icon.
+            writeJson("assets/mineralwalker/items/${itemId}.json", [
+                model: [type: 'minecraft:model', model: "minecraft:item/${id}"]
+            ])
+
+            writeJson("assets/mineralwalker/equipment/${id}.json", [
+                layers: [
+                    humanoid: [[texture: "mineralwalker:${id}"]],
+                    humanoid_leggings: [[texture: "mineralwalker:${id}"]]
+                ]
+            ])
+
+            ['humanoid', 'humanoid_leggings'].each { layer ->
+                File textureFile = new File(root, "assets/mineralwalker/textures/entity/equipment/${layer}/${id}.png")
+                textureFile.parentFile.mkdirs()
+                BufferedImage image = new BufferedImage(64, 32, BufferedImage.TYPE_INT_ARGB)
+                Graphics2D graphics = image.createGraphics()
+                Color baseColor = new Color((int) mineral.color)
+                graphics.setColor(baseColor)
+                graphics.fillRect(0, 0, 64, 32)
+                graphics.setColor(baseColor.brighter())
+                graphics.fillRect(0, 0, 64, 3)
+                graphics.setColor(baseColor.darker())
+                graphics.fillRect(0, 29, 64, 3)
+                graphics.setColor(new Color(0, 0, 0, 45))
+                for (int x = 8; x < 64; x += 16) graphics.drawLine(x, 0, x, 31)
+                for (int y = 8; y < 32; y += 8) graphics.drawLine(0, y, 63, y)
+                graphics.dispose()
+                ImageIO.write(image, 'png', textureFile)
+            }
+        }
+
+        writeJson('assets/mineralwalker/lang/zh_cn.json', zh)
+        writeJson('assets/mineralwalker/lang/en_us.json', en)
+        writeJson('data/mineralwalker/tags/item/repairs_mineral_armor.json', [
+            replace: false,
+            values: minerals.collect { "minecraft:${it.id}" }
+        ])
+    }
+}
+
+tasks.named('processResources') {
+    dependsOn tasks.named('generateMineralResources')
+}
