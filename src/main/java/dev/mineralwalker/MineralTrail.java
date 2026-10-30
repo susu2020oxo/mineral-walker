@@ -28,6 +28,7 @@ public final class MineralTrail {
 
     public static void onLevelTick(ServerLevel level) {
         for (ServerPlayer player : level.players()) {
+            MineralGear.handlePlayer(player);
             UUID playerId = player.getUUID();
             ItemStack chestStack = player.getItemBySlot(EquipmentSlot.CHEST);
             Block mineral = MineralBlocks.blockFor(chestStack.getItem());
