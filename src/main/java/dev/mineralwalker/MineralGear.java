@@ -46,12 +46,12 @@ public final class MineralGear {
             new MineralSpec("raw_iron_block", "粗铁", 0x9A795C, net.minecraft.world.item.Items.RAW_IRON, 220, 3.0F, 12, 2, 1, 0, 0, 0),
             new MineralSpec("lapis_block", "青金石", 0x254C9B, net.minecraft.world.item.Items.LAPIS_LAZULI, 240, 3.2F, 18, 3, 2, 1, 0, 0),
             new MineralSpec("redstone_block", "红石", 0xA52B25, net.minecraft.world.item.Items.REDSTONE, 250, 3.4F, 18, 3, 1, 0, 1, 0),
-            new MineralSpec("iron_block", "铁", 300, 0xB8B8B8, net.minecraft.world.item.Items.IRON_INGOT, 250, 3.6F, 16, 3, 1, 1, 0, 0),
+            new MineralSpec("iron_block", "铁", 0xB8B8B8, net.minecraft.world.item.Items.IRON_INGOT, 250, 3.6F, 16, 3, 1, 1, 0, 0),
             new MineralSpec("raw_gold_block", "粗金", 0xC49B28, net.minecraft.world.item.Items.RAW_GOLD, 180, 3.2F, 16, 2, 1, 0, 1, 0),
             new MineralSpec("gold_block", "黄金", 0xF4C52E, net.minecraft.world.item.Items.GOLD_INGOT, 160, 3.8F, 22, 3, 2, 1, 1, 0),
             new MineralSpec("diamond_block", "钻石", 0x55E6D0, net.minecraft.world.item.Items.DIAMOND, 1561, 5.0F, 18, 4, 2, 2, 0, 0),
             new MineralSpec("emerald_block", "绿宝石", 0x16B85B, net.minecraft.world.item.Items.EMERALD, 1800, 5.8F, 22, 4, 3, 2, 0, 0),
-            new MineralSpec("netherite_block", "下界合金", 2031, 0x51413F, net.minecraft.world.item.Items.NETHERITE_INGOT, 7.0F, 25, 5, 3, 3, 2, 0)
+            new MineralSpec("netherite_block", "下界合金", 0x51413F, net.minecraft.world.item.Items.NETHERITE_INGOT, 2031, 7.0F, 25, 5, 3, 3, 2, 0)
     );
 
     private static final Map<Item, MineralSpec> LEGGINGS = new IdentityHashMap<>();
