@@ -1,5 +1,7 @@
 import java.awt.Color
 import java.awt.Graphics2D
+import java.awt.BasicStroke
+import java.awt.Polygon
 import java.awt.image.BufferedImage
 import javax.imageio.ImageIO
 import groovy.json.JsonOutput
@@ -43,28 +45,28 @@ processResources {
     }
 }
 
-// Equipment layer textures only: the actual wearable items remain vanilla block items.
+// Textures and models for the mineral leggings and their matching swords.
 def minerals = [
-    [id: 'coal_block', color: 0x454545],
-    [id: 'iron_block', color: 0xB8B8B8],
-    [id: 'gold_block', color: 0xF4C52E],
-    [id: 'diamond_block', color: 0x55E6D0],
-    [id: 'emerald_block', color: 0x16B85B],
-    [id: 'lapis_block', color: 0x254C9B],
-    [id: 'redstone_block', color: 0xA52B25],
-    [id: 'copper_block', color: 0xC87548],
-    [id: 'netherite_block', color: 0x51413F],
-    [id: 'amethyst_block', color: 0xA56BCE],
-    [id: 'quartz_block', color: 0xE8E3D8],
-    [id: 'raw_iron_block', color: 0x9A795C],
-    [id: 'raw_gold_block', color: 0xC49B28],
-    [id: 'raw_copper_block', color: 0xA65F42]
+    [id: 'coal_block', name: '煤炭', english: 'Coal', color: 0x454545, drop: 'coal'],
+    [id: 'raw_copper_block', name: '粗铜', english: 'Raw Copper', color: 0xA65F42, drop: 'raw_copper'],
+    [id: 'copper_block', name: '铜', english: 'Copper', color: 0xC87548, drop: 'copper_ingot'],
+    [id: 'quartz_block', name: '石英', english: 'Quartz', color: 0xE8E3D8, drop: 'quartz'],
+    [id: 'amethyst_block', name: '紫水晶', english: 'Amethyst', color: 0xA56BCE, drop: 'amethyst_shard'],
+    [id: 'raw_iron_block', name: '粗铁', english: 'Raw Iron', color: 0x9A795C, drop: 'raw_iron'],
+    [id: 'lapis_block', name: '青金石', english: 'Lapis Lazuli', color: 0x254C9B, drop: 'lapis_lazuli'],
+    [id: 'redstone_block', name: '红石', english: 'Redstone', color: 0xA52B25, drop: 'redstone'],
+    [id: 'iron_block', name: '铁', english: 'Iron', color: 0xB8B8B8, drop: 'iron_ingot'],
+    [id: 'raw_gold_block', name: '粗金', english: 'Raw Gold', color: 0xC49B28, drop: 'raw_gold'],
+    [id: 'gold_block', name: '黄金', english: 'Gold', color: 0xF4C52E, drop: 'gold_ingot'],
+    [id: 'diamond_block', name: '钻石', english: 'Diamond', color: 0x55E6D0, drop: 'diamond'],
+    [id: 'emerald_block', name: '绿宝石', english: 'Emerald', color: 0x16B85B, drop: 'emerald'],
+    [id: 'netherite_block', name: '下界合金', english: 'Netherite', color: 0x51413F, drop: 'netherite_ingot']
 ]
 
 def generatedResources = layout.buildDirectory.dir('generated/mineralwalker-resources')
 sourceSets.main.resources.srcDir(generatedResources)
 
-tasks.register('generateMineralEquipment') {
+tasks.register('generateMineralGearResources') {
     outputs.dir(generatedResources)
     doLast {
         File root = generatedResources.get().asFile
@@ -76,21 +78,48 @@ tasks.register('generateMineralEquipment') {
             output.setText(JsonOutput.prettyPrint(JsonOutput.toJson(value)), 'UTF-8')
         }
 
+        Map<String, String> zh = [:]
+        Map<String, String> en = [:]
+        def leggingsIds = []
+        def swordIds = []
+        def repairIds = []
+
         minerals.each { mineral ->
             String id = mineral.id
-            writeJson("assets/mineralwalker/equipment/${id}.json", [
-                layers: [
-                    humanoid: [[texture: "mineralwalker:${id}"]],
-                    humanoid_leggings: [[texture: "mineralwalker:${id}"]]
-                ]
+            String leggingsId = "${id}_leggings"
+            String swordId = "${id}_sword"
+            leggingsIds << "mineralwalker:${leggingsId}"
+            swordIds << "mineralwalker:${swordId}"
+            repairIds << "minecraft:${mineral.drop}"
+
+            zh["item.mineralwalker.${leggingsId}"] = "${mineral.name}护腿"
+            zh["item.mineralwalker.${swordId}"] = "${mineral.name}剑"
+            en["item.mineralwalker.${leggingsId}"] = "${mineral.english} Leggings"
+            en["item.mineralwalker.${swordId}"] = "${mineral.english} Sword"
+
+            writeJson("assets/mineralwalker/items/${leggingsId}.json", [
+                model: [type: 'minecraft:model', model: "mineralwalker:item/${leggingsId}"]
+            ])
+            writeJson("assets/mineralwalker/items/${swordId}.json", [
+                model: [type: 'minecraft:model', model: "mineralwalker:item/${swordId}"]
+            ])
+            writeJson("assets/mineralwalker/models/item/${leggingsId}.json", [
+                parent: 'minecraft:item/generated',
+                textures: [layer0: "mineralwalker:item/${leggingsId}"]
+            ])
+            writeJson("assets/mineralwalker/models/item/${swordId}.json", [
+                parent: 'minecraft:item/handheld',
+                textures: [layer0: "mineralwalker:item/${swordId}"]
             ])
 
-            ['humanoid', 'humanoid_leggings'].each { layer ->
+            Color baseColor = new Color((int) mineral.color)
+
+            // Mineral-matched armor layers: block-like pixel facets and highlights.
+            ['humanoid', 'humanoid_leggings', 'humanoid_baby'].each { layer ->
                 File textureFile = new File(root, "assets/mineralwalker/textures/entity/equipment/${layer}/${id}.png")
                 textureFile.parentFile.mkdirs()
                 BufferedImage image = new BufferedImage(64, 32, BufferedImage.TYPE_INT_ARGB)
                 Graphics2D graphics = image.createGraphics()
-                Color baseColor = new Color((int) mineral.color)
                 graphics.setColor(baseColor)
                 graphics.fillRect(0, 0, 64, 32)
                 graphics.setColor(baseColor.brighter())
@@ -99,16 +128,99 @@ tasks.register('generateMineralEquipment') {
                 graphics.setColor(baseColor.darker())
                 graphics.fillRect(0, 29, 64, 3)
                 graphics.fillRect(61, 0, 3, 32)
-                graphics.setColor(new Color(0, 0, 0, 55))
+                graphics.setColor(new Color(0, 0, 0, 45))
                 for (int x = 8; x < 64; x += 16) graphics.drawLine(x, 0, x, 31)
                 for (int y = 8; y < 32; y += 8) graphics.drawLine(0, y, 63, y)
+                graphics.setColor(new Color(255, 255, 255, 35))
+                graphics.fillRect(5, 5, 6, 4)
+                graphics.fillRect(37, 17, 8, 5)
                 graphics.dispose()
                 ImageIO.write(image, 'png', textureFile)
             }
+
+            writeJson("assets/mineralwalker/equipment/${id}.json", [
+                layers: [
+                    humanoid: [[texture: "mineralwalker:${id}"]],
+                    humanoid_leggings: [[texture: "mineralwalker:${id}"]],
+                    humanoid_baby: [[texture: "mineralwalker:${id}"]]
+                ]
+            ])
+
+            // Inventory icon for leggings.
+            File leggingsTexture = new File(root, "assets/mineralwalker/textures/item/${leggingsId}.png")
+            leggingsTexture.parentFile.mkdirs()
+            BufferedImage pants = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB)
+            Graphics2D pg = pants.createGraphics()
+            pg.setColor(baseColor.darker())
+            pg.fillRect(3, 2, 10, 4)
+            pg.fillRect(4, 6, 4, 8)
+            pg.fillRect(9, 6, 4, 8)
+            pg.setColor(baseColor)
+            pg.fillRect(4, 3, 8, 3)
+            pg.fillRect(5, 6, 2, 7)
+            pg.fillRect(9, 6, 2, 7)
+            pg.setColor(baseColor.brighter())
+            pg.fillRect(4, 2, 8, 1)
+            pg.fillRect(5, 6, 1, 5)
+            pg.fillRect(9, 6, 1, 5)
+            pg.dispose()
+            ImageIO.write(pants, 'png', leggingsTexture)
+
+            // Pixel-art sword in the same mineral palette.
+            File swordTexture = new File(root, "assets/mineralwalker/textures/item/${swordId}.png")
+            swordTexture.parentFile.mkdirs()
+            BufferedImage sword = new BufferedImage(32, 32, BufferedImage.TYPE_INT_ARGB)
+            Graphics2D sg = sword.createGraphics()
+            sg.setStroke(new BasicStroke(6.0F, BasicStroke.CAP_SQUARE, BasicStroke.JOIN_MITER))
+            sg.setColor(new Color(20, 20, 20, 255))
+            sg.drawLine(25, 5, 8, 22)
+            sg.setStroke(new BasicStroke(3.0F, BasicStroke.CAP_SQUARE, BasicStroke.JOIN_MITER))
+            sg.setColor(baseColor)
+            sg.drawLine(25, 5, 8, 22)
+            sg.setStroke(new BasicStroke(1.0F))
+            sg.setColor(baseColor.brighter())
+            sg.drawLine(24, 5, 9, 20)
+            sg.setStroke(new BasicStroke(4.0F, BasicStroke.CAP_SQUARE, BasicStroke.JOIN_MITER))
+            sg.setColor(new Color(65, 45, 30))
+            sg.drawLine(7, 23, 3, 27)
+            sg.setColor(baseColor.darker())
+            sg.drawLine(6, 20, 11, 25)
+            sg.setColor(new Color(225, 190, 90))
+            sg.setStroke(new BasicStroke(3.0F, BasicStroke.CAP_SQUARE, BasicStroke.JOIN_MITER))
+            sg.drawLine(9, 19, 14, 24)
+            sg.dispose()
+            ImageIO.write(sword, 'png', swordTexture)
         }
+
+        writeJson('assets/mineralwalker/lang/zh_cn.json', zh)
+        writeJson('assets/mineralwalker/lang/en_us.json', en)
+        writeJson('data/mineralwalker/tags/item/repairs_mineral_gear.json', [
+            replace: false,
+            values: repairIds.unique()
+        ])
+        writeJson('data/mineralwalker/tags/block/incorrect_for_mineral_sword.json', [
+            replace: false,
+            values: []
+        ])
+        writeJson('data/minecraft/tags/item/swords.json', [
+            replace: false,
+            values: swordIds
+        ])
+        writeJson('data/minecraft/tags/item/leg_armor.json', [
+            replace: false,
+            values: leggingsIds
+        ])
+        writeJson('data/minecraft/tags/item/enchantable/sword.json', [
+            replace: false,
+            values: swordIds
+        ])
+        writeJson('data/minecraft/tags/item/enchantable/leg_armor.json', [
+            replace: false,
+            values: leggingsIds
+        ])
     }
 }
 
 tasks.named('processResources') {
-    dependsOn tasks.named('generateMineralEquipment')
+    dependsOn tasks.named('generateMineralGearResources')
 }
