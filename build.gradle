@@ -123,15 +123,15 @@ tasks.register('generateMineralGearResources') {
             // Face details inspired by the supplied gold avatar reference:
             // a red left eye and violet right eye on the helmet's front UV area.
             ag.setColor(new Color(28, 18, 8, 255))
-            ag.fillRect(24, 9, 2, 6)
-            ag.fillRect(29, 9, 2, 6)
+            ag.fillRect(9, 9, 2, 6)
+            ag.fillRect(13, 9, 2, 6)
             ag.setColor(new Color(225, 35, 30, 255))
-            ag.fillRect(24, 10, 2, 4)
+            ag.fillRect(9, 10, 2, 4)
             ag.setColor(new Color(112, 78, 225, 255))
-            ag.fillRect(29, 10, 2, 4)
+            ag.fillRect(13, 10, 2, 4)
             ag.setColor(new Color(255, 235, 150, 255))
-            ag.fillRect(24, 10, 1, 1)
-            ag.fillRect(29, 10, 1, 1)
+            ag.fillRect(9, 10, 1, 1)
+            ag.fillRect(13, 10, 1, 1)
 
             // Small turquoise fish/diamond badge on the chest front.
             ag.setColor(new Color(0, 70, 82, 255))
@@ -145,11 +145,33 @@ tasks.register('generateMineralGearResources') {
             ag.fillRect(23, 27, 2, 1)
             ag.dispose()
 
-            ['humanoid', 'humanoid_leggings'].each { layer ->
-                File armorTexture = new File(root, "assets/mineralwalker/textures/entity/equipment/${layer}/${id}.png")
-                armorTexture.parentFile.mkdirs()
-                ImageIO.write(armor, 'png', armorTexture)
-            }
+            File armorTexture = new File(root, "assets/mineralwalker/textures/entity/equipment/humanoid/${id}.png")
+            armorTexture.parentFile.mkdirs()
+            ImageIO.write(armor, 'png', armorTexture)
+
+            // Leggings use a separate UV layout: keep the same mineral finish,
+            // but do not copy the face or chest badge onto the leg texture.
+            BufferedImage leggingsArmor = new BufferedImage(64, 32, BufferedImage.TYPE_INT_ARGB)
+            Graphics2D lg = leggingsArmor.createGraphics()
+            lg.setColor(baseColor)
+            lg.fillRect(0, 0, 64, 32)
+            lg.setColor(baseColor.brighter())
+            lg.fillRect(0, 0, 64, 3)
+            lg.fillRect(0, 0, 3, 32)
+            lg.setColor(baseColor.darker())
+            lg.fillRect(0, 29, 64, 3)
+            lg.fillRect(61, 0, 3, 32)
+            lg.setColor(new Color(0, 0, 0, 45))
+            for (int x = 8; x < 64; x += 16) lg.drawLine(x, 0, x, 31)
+            for (int y = 8; y < 32; y += 8) lg.drawLine(0, y, 63, y)
+            lg.setColor(new Color(255, 255, 255, 35))
+            lg.fillRect(5, 5, 6, 4)
+            lg.fillRect(37, 17, 8, 5)
+            lg.dispose()
+
+            File leggingsTexture = new File(root, "assets/mineralwalker/textures/entity/equipment/humanoid_leggings/${id}.png")
+            leggingsTexture.parentFile.mkdirs()
+            ImageIO.write(leggingsArmor, 'png', leggingsTexture)
 
             writeJson("assets/mineralwalker/equipment/${id}.json", [
                 layers: [
