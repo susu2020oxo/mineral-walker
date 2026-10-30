@@ -1,6 +1,7 @@
 package dev.mineralwalker;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,7 +17,6 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.CreativeModeTabs;
@@ -24,13 +24,12 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ToolMaterial;
 import net.minecraft.world.item.enchantment.Enchantments;
-import net.minecraft.world.item.equipment.ArmorMaterial;
-import net.minecraft.world.item.equipment.ArmorType;
-import net.minecraft.world.item.equipment.EquipmentAsset;
-import net.minecraft.world.item.equipment.EquipmentAssets;
 import net.minecraft.world.level.block.Block;
 
-/** Registers mineral leggings and their matching swords. */
+/**
+ * Registers only matching mineral swords. The wearable items are the original
+ * vanilla mineral block items, equipped directly in the player's leggings slot.
+ */
 public final class MineralGear {
     private static final TagKey<Item> REPAIR_ITEMS =
             TagKey.create(BuiltInRegistries.ITEM.key(), id("repairs_mineral_gear"));
@@ -38,26 +37,27 @@ public final class MineralGear {
             TagKey.create(Registries.BLOCK, id("incorrect_for_mineral_sword"));
 
     private static final List<MineralSpec> SPECS = List.of(
-            new MineralSpec("coal_block", "煤炭", 0x454545, net.minecraft.world.item.Items.COAL, 90, 1.0F, 8, 1, 1, 0, 0, 0),
-            new MineralSpec("raw_copper_block", "粗铜", 0xA65F42, net.minecraft.world.item.Items.RAW_COPPER, 150, 1.5F, 10, 1, 1, 0, 0, 0),
-            new MineralSpec("copper_block", "铜", 0xC87548, net.minecraft.world.item.Items.COPPER_INGOT, 180, 2.0F, 12, 2, 1, 0, 0, 0),
-            new MineralSpec("quartz_block", "石英", 0xE8E3D8, net.minecraft.world.item.Items.QUARTZ, 190, 2.4F, 14, 2, 1, 0, 0, 0),
-            new MineralSpec("amethyst_block", "紫水晶", 0xA56BCE, net.minecraft.world.item.Items.AMETHYST_SHARD, 220, 2.8F, 16, 2, 2, 1, 0, 0),
-            new MineralSpec("raw_iron_block", "粗铁", 0x9A795C, net.minecraft.world.item.Items.RAW_IRON, 220, 3.0F, 12, 2, 1, 0, 0, 0),
-            new MineralSpec("lapis_block", "青金石", 0x254C9B, net.minecraft.world.item.Items.LAPIS_LAZULI, 240, 3.2F, 18, 3, 2, 1, 0, 0),
-            new MineralSpec("redstone_block", "红石", 0xA52B25, net.minecraft.world.item.Items.REDSTONE, 250, 3.4F, 18, 3, 1, 0, 1, 0),
-            new MineralSpec("iron_block", "铁", 0xB8B8B8, net.minecraft.world.item.Items.IRON_INGOT, 250, 3.6F, 16, 3, 1, 1, 0, 0),
-            new MineralSpec("raw_gold_block", "粗金", 0xC49B28, net.minecraft.world.item.Items.RAW_GOLD, 180, 3.2F, 16, 2, 1, 0, 1, 0),
-            new MineralSpec("gold_block", "黄金", 0xF4C52E, net.minecraft.world.item.Items.GOLD_INGOT, 160, 3.8F, 22, 3, 2, 1, 1, 0),
-            new MineralSpec("diamond_block", "钻石", 0x55E6D0, net.minecraft.world.item.Items.DIAMOND, 1561, 5.0F, 18, 4, 2, 2, 0, 0),
-            new MineralSpec("emerald_block", "绿宝石", 0x16B85B, net.minecraft.world.item.Items.EMERALD, 1800, 5.8F, 22, 4, 3, 2, 0, 0),
-            new MineralSpec("netherite_block", "下界合金", 0x51413F, net.minecraft.world.item.Items.NETHERITE_INGOT, 2031, 7.0F, 25, 5, 3, 3, 2, 0)
+            new MineralSpec("coal_block", "煤炭", net.minecraft.world.item.Items.COAL, 90, 1.0F, 8, 1, 1, 0, 0),
+            new MineralSpec("raw_copper_block", "粗铜", net.minecraft.world.item.Items.RAW_COPPER, 150, 1.5F, 10, 1, 1, 0, 0),
+            new MineralSpec("copper_block", "铜", net.minecraft.world.item.Items.COPPER_INGOT, 180, 2.0F, 12, 2, 1, 0, 0),
+            new MineralSpec("quartz_block", "石英", net.minecraft.world.item.Items.QUARTZ, 190, 2.4F, 14, 2, 1, 0, 0),
+            new MineralSpec("amethyst_block", "紫水晶", net.minecraft.world.item.Items.AMETHYST_SHARD, 220, 2.8F, 16, 2, 2, 1, 0),
+            new MineralSpec("raw_iron_block", "粗铁", net.minecraft.world.item.Items.RAW_IRON, 220, 3.0F, 12, 2, 1, 0, 0),
+            new MineralSpec("lapis_block", "青金石", net.minecraft.world.item.Items.LAPIS_LAZULI, 240, 3.2F, 18, 3, 2, 1, 0),
+            new MineralSpec("redstone_block", "红石", net.minecraft.world.item.Items.REDSTONE, 250, 3.4F, 18, 3, 1, 0, 1),
+            new MineralSpec("iron_block", "铁", net.minecraft.world.item.Items.IRON_INGOT, 250, 3.6F, 16, 3, 1, 1, 0),
+            new MineralSpec("raw_gold_block", "粗金", net.minecraft.world.item.Items.RAW_GOLD, 180, 3.2F, 16, 2, 1, 0, 1),
+            new MineralSpec("gold_block", "黄金", net.minecraft.world.item.Items.GOLD_INGOT, 160, 3.8F, 22, 3, 2, 1, 1),
+            new MineralSpec("diamond_block", "钻石", net.minecraft.world.item.Items.DIAMOND, 1561, 5.0F, 18, 4, 2, 2, 0),
+            new MineralSpec("emerald_block", "绿宝石", net.minecraft.world.item.Items.EMERALD, 1800, 5.8F, 22, 4, 3, 2, 0),
+            new MineralSpec("netherite_block", "下界合金", net.minecraft.world.item.Items.NETHERITE_INGOT, 2031, 7.0F, 25, 5, 3, 3, 2)
     );
 
-    private static final Map<Item, MineralSpec> LEGGINGS = new IdentityHashMap<>();
+    private static final Map<Item, MineralSpec> MINERAL_BLOCKS = new IdentityHashMap<>();
     private static final Map<Item, MineralSpec> WEAPONS = new IdentityHashMap<>();
+    private static final Map<MineralSpec, Item> SWORDS_BY_SPEC = new HashMap<>();
     private static final List<Item> CREATIVE_ITEMS = new ArrayList<>();
-    private static final Map<UUID, Item> ACTIVE_LEGGINGS = new java.util.HashMap<>();
+    private static final Map<UUID, Item> ACTIVE_BLOCKS = new HashMap<>();
 
     private MineralGear() {
     }
@@ -70,48 +70,21 @@ public final class MineralGear {
         return ResourceKey.create(Registries.ITEM, id(path));
     }
 
-    private static ResourceKey<EquipmentAsset> equipmentAsset(String path) {
-        return ResourceKey.create(EquipmentAssets.ROOT_ID, id(path));
-    }
-
     public static void initialize() {
         for (MineralSpec spec : SPECS) {
-            registerMineralGear(spec);
+            Item vanillaBlockItem = BuiltInRegistries.ITEM.getValue(id(spec.id()));
+            MINERAL_BLOCKS.put(vanillaBlockItem, spec);
+            registerMineralSword(spec);
         }
 
         CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.COMBAT)
                 .register(entries -> CREATIVE_ITEMS.forEach(entries::accept));
 
-        MineralWalker.LOGGER.info("Registered {} mineral leggings and {} matching swords.",
-                LEGGINGS.size(), WEAPONS.size());
+        MineralWalker.LOGGER.info("Registered {} mineral block mappings and {} matching mineral swords; no custom leggings items.",
+                MINERAL_BLOCKS.size(), WEAPONS.size());
     }
 
-    private static void registerMineralGear(MineralSpec spec) {
-        ResourceKey<EquipmentAsset> assetKey = equipmentAsset(spec.id());
-        ArmorMaterial armorMaterial = new ArmorMaterial(
-                spec.durability(),
-                Map.of(ArmorType.LEGGINGS, 6),
-                spec.enchantability(),
-                SoundEvents.ARMOR_EQUIP_IRON,
-                1.0F,
-                0.05F,
-                REPAIR_ITEMS,
-                assetKey
-        );
-
-        String leggingsPath = spec.id() + "_leggings";
-        ResourceKey<Item> leggingsKey = itemKey(leggingsPath);
-        Item leggings = Registry.register(
-                BuiltInRegistries.ITEM,
-                leggingsKey,
-                new Item(new Item.Properties()
-                        .humanoidArmor(armorMaterial, ArmorType.LEGGINGS)
-                        .durability(ArmorType.LEGGINGS.getDurability(spec.durability()))
-                        .setId(leggingsKey))
-        );
-        LEGGINGS.put(leggings, spec);
-        CREATIVE_ITEMS.add(leggings);
-
+    private static void registerMineralSword(MineralSpec spec) {
         ToolMaterial toolMaterial = new ToolMaterial(
                 INCORRECT_SWORD_BLOCKS,
                 spec.durability(),
@@ -131,37 +104,39 @@ public final class MineralGear {
                         .setId(swordKey))
         );
         WEAPONS.put(sword, spec);
+        SWORDS_BY_SPEC.put(spec, sword);
         CREATIVE_ITEMS.add(sword);
     }
 
     public static void handlePlayer(ServerPlayer player) {
         UUID playerId = player.getUUID();
-        Item currentLeggings = player.getItemBySlot(EquipmentSlot.LEGS).getItem();
-        MineralSpec currentSpec = LEGGINGS.get(currentLeggings);
-        Item currentItem = currentSpec == null ? null : currentLeggings;
-        Item previousItem = ACTIVE_LEGGINGS.get(playerId);
+        Item currentBlockItem = player.getItemBySlot(EquipmentSlot.LEGS).getItem();
+        Block currentBlock = MineralBlocks.blockFor(currentBlockItem);
+        MineralSpec currentSpec = currentBlock == null ? null : MINERAL_BLOCKS.get(currentBlockItem);
+        Item currentItem = currentSpec == null ? null : currentBlockItem;
+        Item previousItem = ACTIVE_BLOCKS.get(playerId);
 
         if (Objects.equals(previousItem, currentItem)) {
             return;
         }
 
         if (previousItem != null) {
-            MineralSpec previous = LEGGINGS.get(previousItem);
-            if (previous != null) {
-                player.sendSystemMessage(Component.literal("[矿物行走者] 已脱下" + previous.name()
-                        + "护腿；已获得的专属武器会保留在背包中。"));
-            }
+            Block previousBlock = MineralBlocks.blockFor(previousItem);
+            String previousName = previousBlock == null ? "矿物块" : MineralBlocks.displayName(previousBlock);
+            player.sendSystemMessage(Component.literal("[矿物行走者] 已卸下" + previousName
+                    + "；已获得的专属武器会保留在背包中。"));
         }
 
         if (currentItem == null) {
-            ACTIVE_LEGGINGS.remove(playerId);
+            ACTIVE_BLOCKS.remove(playerId);
             return;
         }
 
-        ACTIVE_LEGGINGS.put(playerId, currentItem);
-        Item weapon = weaponForLeggings(currentItem);
-        player.sendSystemMessage(Component.literal("[矿物行走者] 已激活：" + currentSpec.name()
-                + "护腿效果，获得专属武器：" + currentSpec.name() + "剑"));
+        ACTIVE_BLOCKS.put(playerId, currentItem);
+        Item weapon = SWORDS_BY_SPEC.get(currentSpec);
+        String blockName = MineralBlocks.displayName(currentBlock);
+        player.sendSystemMessage(Component.literal("[矿物行走者] 已装备" + blockName
+                + "（护腿栏），获得对应专属武器：" + currentSpec.name() + "剑！"));
 
         if (!hasItem(player, weapon)) {
             ItemStack weaponStack = createEnchantedWeapon((ServerLevel) player.level(), currentSpec, weapon);
@@ -172,6 +147,7 @@ public final class MineralGear {
     }
 
     private static boolean hasItem(ServerPlayer player, Item item) {
+        if (item == null) return false;
         for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++) {
             if (player.getInventory().getItem(slot).is(item)) {
                 return true;
@@ -196,15 +172,6 @@ public final class MineralGear {
         return stack;
     }
 
-    public static Item weaponForLeggings(Item leggings) {
-        MineralSpec spec = LEGGINGS.get(leggings);
-        if (spec == null) return null;
-        for (Map.Entry<Item, MineralSpec> entry : WEAPONS.entrySet()) {
-            if (entry.getValue() == spec) return entry.getKey();
-        }
-        return null;
-    }
-
     public static MineralSpec specForWeapon(Item weapon) {
         return WEAPONS.get(weapon);
     }
@@ -212,7 +179,6 @@ public final class MineralGear {
     public record MineralSpec(
             String id,
             String name,
-            int color,
             Item dropItem,
             int durability,
             float damageBonus,
@@ -220,8 +186,7 @@ public final class MineralGear {
             int sharpness,
             int looting,
             int unbreaking,
-            int fireAspect,
-            int reserved
+            int fireAspect
     ) {
         public int extraDrops() {
             return looting;
