@@ -44,9 +44,8 @@ processResources {
     }
 }
 
-// No custom leggings are generated. These are equipment-layer textures for the
-// original vanilla mineral block items when they are worn in the leggings slot,
-// plus the matching mineral swords.
+// No custom armor items are generated. Equipment-layer textures are supplied for
+// original vanilla mineral block items in both chest and leggings slots, plus swords.
 def minerals = [
     [id: 'coal_block', name: '煤炭', english: 'Coal', color: 0x454545, drop: 'coal'],
     [id: 'raw_copper_block', name: '粗铜', english: 'Raw Copper', color: 0xA65F42, drop: 'raw_copper'],
@@ -103,10 +102,7 @@ tasks.register('generateMineralGearResources') {
 
             Color baseColor = new Color((int) mineral.color)
 
-            // Equipment rendering layer used by the original vanilla block item
-            // after its Equippable component points at the leggings slot.
-            File armorTexture = new File(root, "assets/mineralwalker/textures/entity/equipment/humanoid_leggings/${id}.png")
-            armorTexture.parentFile.mkdirs()
+            // Render the same original block item in either armor slot.
             BufferedImage armor = new BufferedImage(64, 32, BufferedImage.TYPE_INT_ARGB)
             Graphics2D ag = armor.createGraphics()
             ag.setColor(baseColor)
@@ -124,10 +120,16 @@ tasks.register('generateMineralGearResources') {
             ag.fillRect(5, 5, 6, 4)
             ag.fillRect(37, 17, 8, 5)
             ag.dispose()
-            ImageIO.write(armor, 'png', armorTexture)
+
+            ['humanoid', 'humanoid_leggings'].each { layer ->
+                File armorTexture = new File(root, "assets/mineralwalker/textures/entity/equipment/${layer}/${id}.png")
+                armorTexture.parentFile.mkdirs()
+                ImageIO.write(armor, 'png', armorTexture)
+            }
 
             writeJson("assets/mineralwalker/equipment/${id}.json", [
                 layers: [
+                    humanoid: [[texture: "mineralwalker:${id}"]],
                     humanoid_leggings: [[texture: "mineralwalker:${id}"]]
                 ]
             ])
