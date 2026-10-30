@@ -32,7 +32,7 @@ jobs:
       - name: Upload installable mod JAR
         uses: actions/upload-artifact@v4
         with:
-          name: mineral-walker-2.0.0-minecraft-26.2-fabric
-          path: build/libs/mineral-walker-2.0.0.jar
+          name: mineral-walker-2.0.1-minecraft-26.2-fabric
+          path: build/libs/mineral-walker-2.0.1.jar
           if-no-files-found: error
           retention-days: 30
