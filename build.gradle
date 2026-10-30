@@ -2,6 +2,8 @@ import java.awt.Color
 import java.awt.Graphics2D
 import java.awt.BasicStroke
 import java.awt.image.BufferedImage
+import java.io.ByteArrayInputStream
+import java.util.Base64
 import javax.imageio.ImageIO
 import groovy.json.JsonOutput
 
@@ -149,25 +151,45 @@ tasks.register('generateMineralGearResources') {
             armorTexture.parentFile.mkdirs()
             ImageIO.write(armor, 'png', armorTexture)
 
-            // Leggings use a separate UV layout: keep the same mineral finish,
-            // but do not copy the face or chest badge onto the leg texture.
+            // Use the official vanilla gold leggings texture as the exact 64x32 UV/alpha
+            // template. The old generic full-canvas texture did not follow the sparse
+            // leggings UV islands, which could make the pants render without their material.
+            String vanillaLeggingsPng = """
+                iVBORw0KGgoAAAANSUhEUgAAAEAAAAAgBAMAAABQs2O3AAAAG1BMVEUAAAD/
+                ///+/739/3b/8Fr/2D31uBzgsjDTljLadQyCAAAAAXRSTlMAQObYZgAAAJhJ
+                REFUeNrtkMsNAyEMRFNL0kJKiAQNRHYDC1yDMOYe8yk72r0hrUMDO4e5+Ekz
+                49ulS7O4L4BoF4CEBTDG/walFx6sQxkJCUiPaZCMWAEVIKhIIEYFkiVPhkCP
+                wGyqJ69HeAlkM+oAZN+AcJ/KvQ8uZZ5cuB+3aD6Pl4k23p/nhcV/3w7T7qA8
+                LLkNGlS34fmaUKGFw6dFPzSOO1wJgu6lAAAAAElFTkSuQmCC
+            """.replaceAll("\\s+", "")
+            BufferedImage vanillaLeggingsUv = ImageIO.read(
+                    new ByteArrayInputStream(Base64.getDecoder().decode(vanillaLeggingsPng)))
+            if (vanillaLeggingsUv == null || vanillaLeggingsUv.width != 64 || vanillaLeggingsUv.height != 32) {
+                throw new GradleException("Could not load the 64x32 vanilla leggings UV template")
+            }
+
             BufferedImage leggingsArmor = new BufferedImage(64, 32, BufferedImage.TYPE_INT_ARGB)
-            Graphics2D lg = leggingsArmor.createGraphics()
-            lg.setColor(baseColor)
-            lg.fillRect(0, 0, 64, 32)
-            lg.setColor(baseColor.brighter())
-            lg.fillRect(0, 0, 64, 3)
-            lg.fillRect(0, 0, 3, 32)
-            lg.setColor(baseColor.darker())
-            lg.fillRect(0, 29, 64, 3)
-            lg.fillRect(61, 0, 3, 32)
-            lg.setColor(new Color(0, 0, 0, 45))
-            for (int x = 8; x < 64; x += 16) lg.drawLine(x, 0, x, 31)
-            for (int y = 8; y < 32; y += 8) lg.drawLine(0, y, 63, y)
-            lg.setColor(new Color(255, 255, 255, 35))
-            lg.fillRect(5, 5, 6, 4)
-            lg.fillRect(37, 17, 8, 5)
-            lg.dispose()
+            for (int py = 0; py < 32; py++) {
+                for (int px = 0; px < 64; px++) {
+                    int source = vanillaLeggingsUv.getRGB(px, py)
+                    int alpha = (source >>> 24) & 0xFF
+                    if (alpha == 0) continue
+
+                    // Retain vanilla's pixel shading and exact UV silhouette while tinting
+                    // every mineral's leggings to its matching block material.
+                    double sourceLuma = (
+                            ((source >>> 16) & 0xFF) * 0.2126D
+                            + ((source >>> 8) & 0xFF) * 0.7152D
+                            + (source & 0xFF) * 0.0722D
+                    ) / 255.0D
+                    double shade = 0.42D + sourceLuma * 0.92D
+                    int red = Math.min(255, (int) Math.round(baseColor.getRed() * shade))
+                    int green = Math.min(255, (int) Math.round(baseColor.getGreen() * shade))
+                    int blue = Math.min(255, (int) Math.round(baseColor.getBlue() * shade))
+                    leggingsArmor.setRGB(px, py,
+                            (alpha << 24) | (red << 16) | (green << 8) | blue)
+                }
+            }
 
             File leggingsTexture = new File(root, "assets/mineralwalker/textures/entity/equipment/humanoid_leggings/${id}.png")
             leggingsTexture.parentFile.mkdirs()
