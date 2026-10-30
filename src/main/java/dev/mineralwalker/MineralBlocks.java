@@ -1,14 +1,18 @@
 package dev.mineralwalker;
 
+import java.util.EnumMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import net.fabricmc.fabric.api.item.v1.DefaultItemComponentEvents;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.equipment.EquipmentAsset;
 import net.minecraft.world.item.equipment.EquipmentAssets;
 import net.minecraft.world.item.equipment.Equippable;
@@ -16,12 +20,16 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 
 /**
- * Makes the vanilla mineral block items wearable in the leggings slot.
- * The item itself remains the original Minecraft block item; no leggings item is registered.
+ * Makes the original vanilla mineral block items wearable in both armor slots.
+ *
+ * Equippable is a per-stack component, so the same vanilla item can have a chest
+ * component on one stack and a leggings component on another stack. No new
+ * mineral armor item is registered.
  */
 public final class MineralBlocks {
     private static final Map<Item, Block> MINERAL_ITEMS = new IdentityHashMap<>();
     private static final Map<Block, String> DISPLAY_NAMES = new IdentityHashMap<>();
+    private static final Map<Item, Map<EquipmentSlot, Equippable>> EQUIPPABLES = new IdentityHashMap<>();
 
     static {
         add(Blocks.COAL_BLOCK, "coal_block", "煤炭块");
@@ -44,8 +52,14 @@ public final class MineralBlocks {
     }
 
     private static void add(Block block, String assetName, String displayName) {
-        MINERAL_ITEMS.put(block.asItem(), block);
+        Item item = block.asItem();
+        MINERAL_ITEMS.put(item, block);
         DISPLAY_NAMES.put(block, displayName);
+
+        EnumMap<EquipmentSlot, Equippable> bySlot = new EnumMap<>(EquipmentSlot.class);
+        bySlot.put(EquipmentSlot.CHEST, createEquippable(assetName, EquipmentSlot.CHEST));
+        bySlot.put(EquipmentSlot.LEGS, createEquippable(assetName, EquipmentSlot.LEGS));
+        EQUIPPABLES.put(item, bySlot);
     }
 
     private static ResourceKey<EquipmentAsset> equipmentAsset(String name) {
@@ -53,22 +67,54 @@ public final class MineralBlocks {
         return ResourceKey.create(EquipmentAssets.ROOT_ID, id);
     }
 
-    public static void initialize() {
-        DefaultItemComponentEvents.MODIFY.register(context -> {
-            MINERAL_ITEMS.forEach((item, block) -> {
-                String path = BuiltinBlockNames.assetName(block);
-                Equippable equippable = Equippable.builder(EquipmentSlot.LEGS)
-                        .setAsset(equipmentAsset(path))
-                        .setSwappable(true)
-                        .setDamageOnHurt(false)
-                        .build();
+    private static Equippable createEquippable(String assetName, EquipmentSlot slot) {
+        return Equippable.builder(slot)
+                .setAsset(equipmentAsset(assetName))
+                .setSwappable(true)
+                .setDamageOnHurt(false)
+                .build();
+    }
 
-                context.modify(item, builder -> builder.set(DataComponents.EQUIPPABLE, equippable));
-            });
+    public static void initialize() {
+        // Right-clicking an unassigned mineral block equips it to the chest first.
+        // Once the chest contains a mineral block, inventory stacks are assigned to legs.
+        DefaultItemComponentEvents.MODIFY.register(context -> {
+            MINERAL_ITEMS.forEach((item, block) -> context.modify(item,
+                    builder -> builder.set(DataComponents.EQUIPPABLE,
+                            equippableFor(item, EquipmentSlot.CHEST))));
         });
 
-        MineralWalker.LOGGER.info("Attached leggings-slot equipment to {} original vanilla mineral block items.",
+        MineralWalker.LOGGER.info("Enabled original vanilla mineral block items for chest and leggings slots ({} block types).",
                 MINERAL_ITEMS.size());
+    }
+
+    public static Equippable equippableFor(Item item, EquipmentSlot slot) {
+        Map<EquipmentSlot, Equippable> bySlot = EQUIPPABLES.get(item);
+        return bySlot == null ? null : bySlot.get(slot);
+    }
+
+    /**
+     * The same vanilla block item can be used in both armor slots. Since the
+     * vanilla item component has one default slot, inventory stacks are switched
+     * to the leggings slot after a mineral block has been equipped in the chest.
+     * The player uses a second original block item for the second armor slot.
+     */
+    public static void updateInventoryEquipmentSlots(ServerPlayer player) {
+        boolean chestHasMineral = blockFor(player.getItemBySlot(EquipmentSlot.CHEST).getItem()) != null;
+        EquipmentSlot desiredSlot = chestHasMineral ? EquipmentSlot.LEGS : EquipmentSlot.CHEST;
+
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            ItemStack stack = player.getInventory().getItem(i);
+            if (stack.isEmpty() || blockFor(stack.getItem()) == null) {
+                continue;
+            }
+
+            Equippable desired = equippableFor(stack.getItem(), desiredSlot);
+            Equippable current = stack.get(DataComponents.EQUIPPABLE);
+            if (!Objects.equals(current, desired)) {
+                stack.set(DataComponents.EQUIPPABLE, desired);
+            }
+        }
     }
 
     public static Block blockFor(Item item) {
@@ -79,26 +125,21 @@ public final class MineralBlocks {
         return DISPLAY_NAMES.getOrDefault(block, "矿物块");
     }
 
-    private static final class BuiltinBlockNames {
-        private BuiltinBlockNames() {
-        }
-
-        private static String assetName(Block block) {
-            if (block == Blocks.COAL_BLOCK) return "coal_block";
-            if (block == Blocks.IRON_BLOCK) return "iron_block";
-            if (block == Blocks.GOLD_BLOCK) return "gold_block";
-            if (block == Blocks.DIAMOND_BLOCK) return "diamond_block";
-            if (block == Blocks.EMERALD_BLOCK) return "emerald_block";
-            if (block == Blocks.LAPIS_BLOCK) return "lapis_block";
-            if (block == Blocks.REDSTONE_BLOCK) return "redstone_block";
-            if (block == Blocks.COPPER_BLOCK.weathering().unaffected()) return "copper_block";
-            if (block == Blocks.NETHERITE_BLOCK) return "netherite_block";
-            if (block == Blocks.AMETHYST_BLOCK) return "amethyst_block";
-            if (block == Blocks.QUARTZ_BLOCK) return "quartz_block";
-            if (block == Blocks.RAW_IRON_BLOCK) return "raw_iron_block";
-            if (block == Blocks.RAW_GOLD_BLOCK) return "raw_gold_block";
-            if (block == Blocks.RAW_COPPER_BLOCK) return "raw_copper_block";
-            throw new IllegalArgumentException("Unsupported mineral block: " + block);
-        }
+    private static String assetName(Block block) {
+        if (block == Blocks.COAL_BLOCK) return "coal_block";
+        if (block == Blocks.IRON_BLOCK) return "iron_block";
+        if (block == Blocks.GOLD_BLOCK) return "gold_block";
+        if (block == Blocks.DIAMOND_BLOCK) return "diamond_block";
+        if (block == Blocks.EMERALD_BLOCK) return "emerald_block";
+        if (block == Blocks.LAPIS_BLOCK) return "lapis_block";
+        if (block == Blocks.REDSTONE_BLOCK) return "redstone_block";
+        if (block == Blocks.COPPER_BLOCK.weathering().unaffected()) return "copper_block";
+        if (block == Blocks.NETHERITE_BLOCK) return "netherite_block";
+        if (block == Blocks.AMETHYST_BLOCK) return "amethyst_block";
+        if (block == Blocks.QUARTZ_BLOCK) return "quartz_block";
+        if (block == Blocks.RAW_IRON_BLOCK) return "raw_iron_block";
+        if (block == Blocks.RAW_GOLD_BLOCK) return "raw_gold_block";
+        if (block == Blocks.RAW_COPPER_BLOCK) return "raw_copper_block";
+        throw new IllegalArgumentException("Unsupported mineral block: " + block);
     }
 }
