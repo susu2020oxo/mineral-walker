@@ -15,6 +15,6 @@ public final class MineralWalker implements ModInitializer {
         MineralGear.initialize();
         MineralCombat.initialize();
         ServerTickEvents.END_LEVEL_TICK.register(MineralTrail::onLevelTick);
-        LOGGER.info("Mineral Walker 2.0 initialized: original vanilla mineral blocks worn in the leggings slot and matching swords.");
+        LOGGER.info("Mineral Walker 3.0 initialized: four-slot vanilla mineral block avatar, 10x10 mineral field, touch conversion and empowered weapons.");
     }
 }
