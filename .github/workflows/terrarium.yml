@@ -1,0 +1,22 @@
+name: Terrarium 26.3
+on:
+  push:
+    branches: [terrarium-26.3]
+    paths: ['src/**', 'resources/**', 'ci/**']
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - run: python3 ci/build.py
+      - run: python3 ci/verify.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: terrarium-26.3-fabric
+          path: dist/*.jar
