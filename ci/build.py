@@ -2,14 +2,19 @@
 from pathlib import Path
 from urllib.request import urlopen
 from zipfile import ZipFile
-import hashlib, json, os, subprocess
+import hashlib, json, os, subprocess, time
 
 root = Path.cwd()
 work = root / 'build'
 run = work / 'run'
 run.mkdir(parents=True, exist_ok=True)
-def fetch(url): 
-    with urlopen(url, timeout=120) as response: return response.read()
+def fetch(url):
+    for attempt in range(3):
+        try:
+            with urlopen(url, timeout=120) as response: return response.read()
+        except OSError:
+            if attempt==2: raise
+            time.sleep(2**attempt)
 def meta(url): return json.loads(fetch(url))
 manifest=meta('https://piston-meta.mojang.com/mc/game/version_manifest_v2.json')
 version=meta(next(v['url'] for v in manifest['versions'] if v['id']=='26.3'))
