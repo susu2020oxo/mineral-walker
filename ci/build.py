@@ -41,7 +41,7 @@ sources=[str(p) for p in (root/'src').rglob('*.java')]
 subprocess.run(['javac','-encoding','UTF-8','-proc:none','-cp',classpath,'-d',str(out),*sources],check=True)
 dist=root/'dist'
 dist.mkdir(exist_ok=True)
-jar=dist/'terrarium-26.3-fabric-1.1.0.jar'
+jar=dist/'terrarium-26.3-fabric-1.2.0.jar'
 subprocess.run(['jar','cf',str(jar),'-C','resources','.','-C',str(out),'.'],check=True)
 (run/'mods').mkdir(exist_ok=True)
 (run/'mods'/jar.name).write_bytes(jar.read_bytes())

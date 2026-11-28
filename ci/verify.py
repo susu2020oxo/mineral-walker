@@ -20,12 +20,17 @@ with log.open('w') as output:
     try:
         wait_line('Done (',150)
         command('tick freeze')
-        for i in range(7):
-            x=i*16000
+        for i in range(8):
+            x=i*8000
             command(f'forceload add {x} 0 {x+63} 31')
-        command('forceload add -8032 0 -7969 31')
+        command('forceload add -4032 0 -3969 31')
         command('execute in minecraft:the_nether run forceload add 0 0 63 31')
-        checks={'VILLAGE':'if block 8 65 8 minecraft:oak_log','DESERT':'if block 16008 65 8 minecraft:cactus','MUSHROOM':'if block 32009 65 8 minecraft:mushroom_stem','PIG':'if block 48020 65 19 minecraft:crafting_table','POOL':'if block 64015 65 15 minecraft:chest','TEMPLE':'if block 80000 64 0 minecraft:sand','DARK':'if block 96014 65 13 minecraft:sculk_shrieker[can_summon=true]','EDGE':'if block -8032 64 0 minecraft:sculk if block -8000 64 0 minecraft:grass_block','NETHER':'in minecraft:the_nether if block 8 54 8 minecraft:netherrack'}
+        checks={'VILLAGE':'if block 15 64 15 minecraft:dirt_path','ORES':'if block 8000 64 0 minecraft:coal_ore',
+            'MUSHROOM':'if block 16009 65 8 minecraft:mushroom_stem','OUTPOST':'if block 24000 64 0 minecraft:coarse_dirt',
+            'JUNGLE':'if block 32000 64 0 minecraft:moss_block','TEMPLE':'if block 40000 64 0 minecraft:sand',
+            'DARK':'if block 48014 65 13 minecraft:sculk_shrieker[can_summon=true]','CITY':'if block 56000 64 0 minecraft:end_stone',
+            'EDGE':'if block -4032 64 0 minecraft:end_stone if block -4000 64 0 minecraft:grass_block',
+            'NETHER':'in minecraft:the_nether if block 8 54 8 minecraft:netherrack'}
         for _ in range(65):
             for name,criteria in checks.items(): command('execute '+criteria+' run say PASS_'+name)
             time.sleep(1)
@@ -73,28 +78,36 @@ def state(c,x,y,z):
     bits=max(4,(len(pal)-1).bit_length());per=64//bits
     idx=(y%16)*256+(z%16)*16+x%16
     return name(pal[(blocks['data'][idx//per]>>((idx%per)*bits))&((1<<bits)-1)])
-for i in range(7):
-    tile={};animals=[];contents=[]
+from collections import Counter
+for i in range(8):
+    contents=[];animals=[];tile={}
     for dx in range(2):
         for dz in range(2):
-            cx=i*1000+dx
+            cx=i*500+dx
             c=chunk(cx,dz)
             assert c['Status']=='minecraft:full'
             tile[dx,dz]=c
             contents+=c.get('block_entities',[])
             animals+=chunk(cx,dz,'entities').get('Entities',[])
             repeated=chunk(cx+2,dz)
-            assert state(c,2,-23,3)==state(repeated,2,-23,3)
-            assert state(c,2,64,2)==state(repeated,2,64,2)
+            for height in range(-63,64,9):
+                assert state(c,2,height,3)==state(repeated,2,height,3)
     def at(x,y,z):return state(tile[x//16,z//16],x,y,z)
-    ids=[e.get('id') for e in animals]
-    if i==0:assert ids.count('minecraft:villager')==1 and any(at(x,y,z)=='minecraft:oak_door' for x in range(18,31) for z in range(3,16) for y in range(65,72))
-    if i==1:assert any('door' in at(x,y,z) for x in range(18,31) for z in range(3,16) for y in range(65,72))
-    if i==2:assert ids.count('minecraft:mooshroom')>=1 and at(9,70,8)=='minecraft:red_mushroom_block'
-    if i==3:assert any(e.get('id')=='minecraft:pig' and (e.get('NoAI') or e.get('no_ai')) for e in animals),str(animals)[:5000]
-    if i==4:assert sum(at(x,64,z)=='minecraft:water' for x in range(32) for z in range(32))==4 and len([b for b in contents if b.get('id')=='minecraft:chest'])==1
-    if i==5:
-        assert len([b for b in contents if b.get('id')=='minecraft:chest'])==4
-        assert any(at(x,y,z)=='minecraft:tnt' for x in range(10,22) for z in range(10,22) for y in range(44,63))
-        assert any(at(x,y,z)=='minecraft:stone_pressure_plate' for x in range(10,22) for z in range(10,22) for y in range(44,63))
+    ids=Counter(e.get('id') for e in animals)
+    counts=Counter(at(x,y,z) for x in range(32) for z in range(32) for y in range(44,100))
+    beds=sum(v for k,v in counts.items() if k.endswith('_bed'))
+    chests=[b for b in contents if b['id']=='minecraft:chest']
+    def n(block): return counts['minecraft:'+block]
+    print('Checking',i,'chests',len(chests),'beds',beds,'mobs',ids,'TNT',n('tnt'),flush=True)
+    if i==0:assert ids['minecraft:villager']==4 and beds==8 and n('oak_door')==8 and n('dirt_path')>0
+    if i==1:
+        ores={at(x,64,z) for x in range(32) for z in range(32)}
+        assert len(ores)==8 and all(v.endswith('_ore') for v in ores)
+        assert all(at(x,-40,z).startswith('minecraft:deepslate_') for x in range(32) for z in range(32))
+    if i==2:assert ids['minecraft:mooshroom']>=1 and n('red_mushroom_block')>0 and at(0,64,0)=='minecraft:mycelium'
+    if i==3:assert len(chests)==1 and ids['minecraft:pillager']>=1 and n('dark_oak_planks')>0 and any('pillager_outpost' in str(b) for b in chests)
+    if i==4:assert len(chests)==2 and n('dispenser')==2 and n('tripwire_hook')>=4 and n('lever')==3
+    if i==5:assert len(chests)==4 and n('tnt')==9 and n('stone_pressure_plate')==1
+    if i==6:assert n('sculk_sensor')==2 and n('sculk_shrieker')==1
+    if i==7:assert n('purpur_block')>100 and ids['minecraft:shulker']>0 and any('end_city_treasure' in str(b) for b in chests)
     print('Verified 32×32 exhibit',i,flush=True)

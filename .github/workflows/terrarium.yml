@@ -33,4 +33,4 @@ jobs:
       - name: Publish verified jar
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create terrarium-v1.1.0 dist/*.jar --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title '生态箱 1.1.0 · Fabric 26.3' --notes '七种平整的 32×32 格主世界生态箱。' --latest=false
+        run: gh release create terrarium-v1.2.0 dist/*.jar --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title '生态箱 1.2.0 · Fabric 26.3' --notes '八种平整的 32×32 格主世界生态箱。' --latest=false

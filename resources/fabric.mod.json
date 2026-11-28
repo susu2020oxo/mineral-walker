@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "id": "terrarium",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "name": "生态箱 · Terrarium",
   "environment": "*",
-  "description": "Seven 32×32 dioramas on a level surface. Seed-independent exhibits in repeating 1000-chunk regions.",
+  "description": "Eight 32×32 dioramas on a level surface. Seed-independent exhibits in repeating 500-chunk regions.",
   "license": "MIT",
   "mixins": [
     "terrarium.mixins.json"
